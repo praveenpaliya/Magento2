@@ -138,7 +138,6 @@ class CheckForm extends Template
         $storeId = $this->_storeManager->getStore()->getId();
         $actionName = $this->_request->getFullActionName();
         if ($storeId == "0") {
-            var_dump($this->_storeManager->getStore()->getId());
             $storeId = $this->_storeManager->getDefaultStoreView()->getId();
             $storeCode = $this->_storeManager->getDefaultStoreView()->getCode();
         }
