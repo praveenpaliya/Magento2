@@ -187,21 +187,14 @@ class InvoiceService implements InvoiceManagementInterface
     {
         foreach ($order->getAllItems() as $orderItem) {
             if (empty($qtys[$orderItem->getId()])) {
-                if ($orderItem->getProductType() == Type::TYPE_BUNDLE && !$orderItem->isShipSeparately()) {
+                if ($orderItem->getId() && $orderItem->getProductType() == Type::TYPE_BUNDLE && !$orderItem->isShipSeparately()) { // bugfix
                     $qtys[$orderItem->getId()] = $orderItem->getQtyOrdered() - $orderItem->getQtyInvoiced();
                 } else {
-                    $parentItem = $orderItem->getParentItem();
-                    $parentItemId = $parentItem ? $parentItem->getId() : null;
-                    if ($parentItemId && isset($qtys[$parentItemId])) {
-                        $qtys[$orderItem->getId()] = $qtys[$parentItemId];
-                    }
                     continue;
                 }
             }
-
             $this->prepareItemQty($orderItem, $qtys);
         }
-
         return $qtys;
     }
 
@@ -245,13 +238,11 @@ class InvoiceService implements InvoiceManagementInterface
      */
     private function prepareBundleQty(\Magento\Sales\Api\Data\OrderItemInterface $orderItem, &$qtys)
     {
-        if ($orderItem->getProductType() == Type::TYPE_BUNDLE && !$orderItem->isShipSeparately()) {
+        if ($orderItem->getId() && $orderItem->getProductType() == Type::TYPE_BUNDLE && !$orderItem->isShipSeparately()) { // bugfix
             foreach ($orderItem->getChildrenItems() as $childItem) {
-                $bundleSelectionAttributes = $childItem->getProductOptionByCode('bundle_selection_attributes');
-                if (is_string($bundleSelectionAttributes)) {
-                    $bundleSelectionAttributes = $this->serializer->unserialize($bundleSelectionAttributes);
-                }
-
+                $bundleSelectionAttributes = $this->serializer->unserialize(
+                    $childItem->getProductOptionByCode('bundle_selection_attributes')
+                );
                 $qtys[$childItem->getId()] = $qtys[$orderItem->getId()] * $bundleSelectionAttributes['qty'];
             }
         }
