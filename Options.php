@@ -28,8 +28,6 @@ class Options extends StoreOptions
             return $this->options;
         }
 
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $extensionUser = $objectManager->get('Magento\Backend\Model\Auth\Session')->getUser()->getUsername();
         $this->currentOptions['All Store Views']['label'] = __('All Store Views');
         $this->currentOptions['All Store Views']['value'] = self::ALL_STORE_VIEWS;
 
