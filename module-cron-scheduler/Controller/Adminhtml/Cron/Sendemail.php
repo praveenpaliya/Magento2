@@ -66,6 +66,11 @@ class Sendemail extends \Magento\Backend\App\Action
     public $logger;
 
     /**
+     * @var \Magento\Framework\Stdlib\DateTime\DateTime
+     */
+    public $dateTime;
+
+    /**
      * Test Email Template Name
      */
     const TEST_EMAIL_TEMPLATE = 'cronscheduler_email_template';
@@ -222,12 +227,13 @@ class Sendemail extends \Magento\Backend\App\Action
 
         $this->inlineTranslation->suspend();
 
-        $transport = $this->transportBuilder->setTemplateIdentifier(self::TEST_EMAIL_TEMPLATE)
+        $this->transportBuilder->setTemplateIdentifier(self::TEST_EMAIL_TEMPLATE)
             ->setTemplateOptions($templateOptions)
             ->setTemplateVars($templateVars)
             ->setFrom($from)
-            ->addTo($to)
-            ->getTransport();
+            ->addTo($to);
+
+        $transport = $this->transportBuilder->getTransport();
         $transport->sendMessage();
 
         $this->inlineTranslation->resume();

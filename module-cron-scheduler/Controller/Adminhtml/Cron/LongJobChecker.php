@@ -85,10 +85,12 @@ class LongJobChecker extends \Magento\Backend\App\Action
                 $job->setData('messages', __('Execution stopped due to some error.'));
                 $job->setData('finished_at', $finished_at);
             } else {
+               if(function_exists('posix_kill')){
                 posix_kill($pid, 9);
                 $job->setData('status', self::STATUS_KILLED);
                 $job->setData('messages', __('It is killed as running for longer period.'));
                 $job->setData('finished_at', $finished_at);
+               }
             }
             $job->save();
         }
