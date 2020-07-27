@@ -1,0 +1,59 @@
+diff --git a/Model/Config.php b/Model/Config.php
+index 7b7ed10..423e25a 100644
+--- a/Model/Config.php
++++ b/Model/Config.php
+@@ -13,6 +13,8 @@ use Magento\Framework\App\ObjectManager;
+ use Magento\Framework\Exception\LocalizedException;
+ use Magento\Framework\Model\AbstractModel;
+ use Magento\Framework\Serialize\SerializerInterface;
++use Magento\Store\Model\StoreManagerInterface;
++use Magento\Customer\Model\Customer;
+ 
+ /**
+  * EAV config model.
+@@ -156,15 +158,20 @@ class Config
+     private $attributesForPreload;
+ 
+     /**
++     * @var StoreManagerInterface
++     */
++    private $storeManager;
++
++    /**
++     * Config constructor.
+      * @param \Magento\Framework\App\CacheInterface $cache
+-     * @param \Magento\Eav\Model\Entity\TypeFactory $entityTypeFactory
+-     * @param \Magento\Eav\Model\ResourceModel\Entity\Type\CollectionFactory $entityTypeCollectionFactory
++     * @param Entity\TypeFactory $entityTypeFactory
++     * @param ResourceModel\Entity\Type\CollectionFactory $entityTypeCollectionFactory
+      * @param \Magento\Framework\App\Cache\StateInterface $cacheState
+      * @param \Magento\Framework\Validator\UniversalFactory $universalFactory
+-     * @param SerializerInterface $serializer
+-     * @param ScopeConfigInterface $scopeConfig
++     * @param SerializerInterface|null $serializer
++     * @param ScopeConfigInterface|null $scopeConfig
+      * @param array $attributesForPreload
+-     * @codeCoverageIgnore
+      */
+     public function __construct(
+         \Magento\Framework\App\CacheInterface $cache,
+@@ -176,6 +183,7 @@ class Config
+         ScopeConfigInterface $scopeConfig = null,
+         $attributesForPreload = []
+     ) {
++        $this->storeManager =  ObjectManager::getInstance()->get(StoreManagerInterface::class);;
+         $this->_cache = $cache;
+         $this->_entityTypeFactory = $entityTypeFactory;
+         $this->entityTypeCollectionFactory = $entityTypeCollectionFactory;
+@@ -582,6 +590,11 @@ class Config
+         }
+ 
+         $cacheKey = self::ATTRIBUTES_CACHE_ID . '-' . $entityTypeCode . '-preload';
++        if ($entityTypeCode == Customer::ENTITY) {
++            $websiteId = $this->storeManager->getStore()->getWebsiteId();
++            $cacheKey = self::ATTRIBUTES_CACHE_ID . '-' . $entityTypeCode . '-website-' . $websiteId . '-preload';
++        }
++
+         if ($this->isCacheEnabled() && ($attributes = $this->_cache->load($cacheKey))) {
+             $attributes = $this->serializer->unserialize($attributes);
+             if ($attributes) {

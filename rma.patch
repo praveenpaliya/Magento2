@@ -1,0 +1,23 @@
+diff --git a/module-rma/Controller/Adminhtml/Rma/SaveNew.php b/module-rma/Controller/Adminhtml/Rma/SaveNew.php
+index 8ca048d..eaffa95 100644
+--- a/module-rma/Controller/Adminhtml/Rma/SaveNew.php
++++ b/module-rma/Controller/Adminhtml/Rma/SaveNew.php
+@@ -66,9 +66,15 @@ class SaveNew extends \Magento\Rma\Controller\Adminhtml\Rma implements HttpPostA
+                     $this->_coreRegistry->registry('current_order')
+                 )
+             );
+-            if (!$model->saveRma($saveRequest)) {
+-                throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t save this RMA.'));
+-            }
++			
++			try {
++				$model->saveRma($saveRequest);
++			}
++			catch (\Exception $e) {
++				$this->messageManager->addError(__('We can\'t save this RMA.'));
++				$this->_objectManager->get(\Psr\Log\LoggerInterface::class)->critical($e);
++				$this->_redirect('adminhtml/*/');
++			}
+             $this->_processNewRmaAdditionalInfo($saveRequest, $model);
+             $this->messageManager->addSuccess(__('You submitted the RMA request.'));
+         } catch (\Magento\Framework\Exception\LocalizedException $e) {
