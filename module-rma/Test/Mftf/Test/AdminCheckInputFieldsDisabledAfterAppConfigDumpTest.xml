@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+-->
+
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCheckInputFieldsDisabledAfterAppConfigDumpTest">
+        <grabAttributeFrom selector="{{AdminShippingMethodsRMASection.carriersDHLActiveRMA}}" userInput="disabled" after="assertDHLActiveDisabled" stepKey="grabDHLActiveRMADisabled"/>
+        <assertEquals expected='true' expectedType="string" actual="$grabDHLActiveRMADisabled" after="grabDHLActiveRMADisabled" stepKey="assertDHLActiveRMADisabled"/>
+        <grabAttributeFrom selector="{{AdminShippingMethodsRMASection.carriersFedExActiveRMA}}" userInput="disabled" stepKey="grabFedExActiveRMADisabled" after="assertFedExActiveDisabled"/>
+        <assertEquals expected='true' expectedType="string" actual="$grabFedExActiveRMADisabled" stepKey="assertFedExActiveRMADisabled" after="grabFedExActiveRMADisabled"/>
+        <grabAttributeFrom selector="{{AdminShippingMethodsRMASection.carriersUPSActiveRMA}}" userInput="disabled" stepKey="grabUPSActiveRMADisabled" after="assertUPSActiveDisabled"/>
+        <assertEquals expected='true' expectedType="string" actual="$grabUPSActiveRMADisabled" stepKey="assertUPSActiveRMADisabled" after="grabUPSActiveRMADisabled"/>
+        <grabAttributeFrom selector="{{AdminShippingMethodsRMASection.carriersUSPSActiveRMA}}" userInput="disabled" stepKey="grabUSPSActiveRMADisabled" after="assertUSPSActiveDisabled"/>
+        <assertEquals expected='true' expectedType="string" actual="$grabUSPSActiveRMADisabled" stepKey="assertUSPSActiveRMADisabled" after="grabUSPSActiveRMADisabled"/>
+    </test>
+</tests>
