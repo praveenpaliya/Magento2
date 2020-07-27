@@ -34,7 +34,7 @@ class Save extends SaveNew implements HttpPostActionInterface
             $sourceStatus = $this->_objectManager->create(\Magento\Rma\Model\Rma\Source\Status::class);
             $model->setStatus($sourceStatus->getStatusByItems($itemStatuses))->setIsUpdate(1);
             if (!$model->saveRma($saveRequest)) {
-                throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t save this RMA.-oh'));
+                throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t save this RMA.'));
             }
             /** @var $statusHistory \Magento\Rma\Model\Rma\Status\History */
             $statusHistory = $this->_objectManager->create(\Magento\Rma\Model\Rma\Status\History::class);
@@ -61,7 +61,7 @@ class Save extends SaveNew implements HttpPostActionInterface
             $this->_redirect('adminhtml/*/edit', $controllerParams);
             return;
         } catch (\Exception $e) {
-            $this->messageManager->addError(__('We can\'t save this RMA.--SavePraveen-'.$e->getMessage()));
+            $this->messageManager->addError(__('We can\'t save this RMA.'));
             $this->_objectManager->get(\Psr\Log\LoggerInterface::class)->critical($e);
             $this->_redirect('adminhtml/*/');
             return;
