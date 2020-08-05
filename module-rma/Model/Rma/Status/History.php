@@ -589,7 +589,7 @@ class History extends \Magento\Sales\Model\AbstractModel implements CommentInter
         $order = $rma->getOrder();
 
         $this->_rmaConfig->init($rootConfig, $storeId);
-        if (!$this->_rmaConfig->isEnabled()) {
+        if (!$this->_rmaConfig->isEnabled() || $order->getShippingAddress() == null || $order->getBillingAddress() == null ) {
             return $this;
         }
 
@@ -623,7 +623,7 @@ class History extends \Magento\Sales\Model\AbstractModel implements CommentInter
             $bcc = $copyTo;
         }
         $store = $this->_storeManager->getStore($storeId);
-
+		
         foreach ($sendTo as $recipient) {
             $transport = $this->_transportBuilder->setTemplateIdentifier($template)
                 ->setTemplateOptions(['area' => \Magento\Framework\App\Area::AREA_FRONTEND, 'store' => $storeId])

@@ -836,6 +836,10 @@ class Config
             $fullAttributeData = array_key_exists('is_required', $attributeData);
 
             if ($existsFullAttribute || (!$existsFullAttribute && !$fullAttributeData)) {
+				$scopeIsRequired = $attributeData['scope_is_required'] ?? null;
+                if ($scopeIsRequired !== null) {
+                    $attribute->setData('scope_is_required', $scopeIsRequired);
+                }
                 return $attribute;
             }
         }
