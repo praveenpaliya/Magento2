@@ -74,13 +74,13 @@ class RmaPlugin
      */
     public function afterSaveRma(\Magento\Rma\Model\Rma $subject, $result, $data)
     {
-        /** @var Order $salesOrder */
-        $salesOrder = $result->getOrder();
-        $returnOrderItems = $data['items'];
-
-        if (false === $this->logisticHelper->getIsEnabled()) {
+        if (false === $this->logisticHelper->getIsEnabled() || $result == false) {
             return;
         }
+		
+		/** @var Order $salesOrder */
+        $salesOrder = $result->getOrder();
+        $returnOrderItems = $data['items'];
 
         if (false == $this->logisticHelper->getIsOrdersEnabled($salesOrder->getStore()->getCode())) {
             return;
