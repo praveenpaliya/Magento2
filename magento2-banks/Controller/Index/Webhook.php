@@ -83,10 +83,10 @@ class Webhook extends \Magento\Framework\App\Action\Action implements CsrfAwareA
                     $invoice->register();
                     $invoice->save();
                     
-                }else if($json->type == 'transaction.expired' && $charge->status == 'cancelled'){
+                } else if(($json->type == 'charge.failed' || $json->type == 'transaction.expired') && $charge->status == 'cancelled'){
                     $status = \Magento\Sales\Model\Order::STATE_CANCELED;
                     $order->setState($status)->setStatus($status);
-                    $order->addStatusHistoryComment("Pago vencido")->setIsCustomerNotified(true);            
+                    $order->addStatusHistoryComment("Pago Cancelado")->setIsCustomerNotified(true);            
                     $order->save();
                 }  
             }       
