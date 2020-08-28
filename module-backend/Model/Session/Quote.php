@@ -135,7 +135,7 @@ class Quote extends \Magento\Framework\Session\SessionManager
             $appState
         );
         if ($this->_storeManager->hasSingleStore()) {
-            $this->setStoreId($this->_storeManager->getStore(true)->getId());
+            //$this->setStoreId($this->_storeManager->getStore(true)->getId());
         }
     }
 
