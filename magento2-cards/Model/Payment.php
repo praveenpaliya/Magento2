@@ -26,12 +26,13 @@ use Magento\Store\Model\StoreManagerInterface;
 
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\Session as CustomerSession;
+use BAT\Environment\Model\Config as EnvironmentConfig;
 
 class Payment extends \Magento\Payment\Model\Method\Cc
 {
 
     const CODE = 'openpay_cards';
-
+	const CONFIG_ROUND_FOR_REFUND = 'payment/openpay_cards/round_for_refund';
     protected $_code = self::CODE;
     protected $_isGateway = true;
     protected $_canOrder = true;
@@ -64,6 +65,7 @@ class Payment extends \Magento\Payment\Model\Method\Cc
     protected $save_cc;
     protected $installments;
     protected $iva = 0;
+	private $environmentConfig;
 
     /**
      * @var Customer
@@ -94,6 +96,7 @@ class Payment extends \Magento\Payment\Model\Method\Cc
      * @param \Magento\Store\Model\StoreManagerInterface $data
      */
     public function __construct(
+			EnvironmentConfig $environmentConfig,
             StoreManagerInterface $storeManager,
             Context $context, 
             Registry $registry, 
@@ -153,6 +156,7 @@ class Payment extends \Magento\Payment\Model\Method\Cc
         //$this->minimum_amount = $this->getConfigData('minimum_amount');
         
         $this->openpay = $openpay;
+		$this->environmentConfig = $environmentConfig;
     }
     
     /**
@@ -232,6 +236,10 @@ class Payment extends \Magento\Payment\Model\Method\Cc
         
         if ($amount <= 0) {
             throw new \Magento\Framework\Exception\LocalizedException(__('Invalid amount for refund.'));
+        }
+		//round value send to openpay if currency has no decimal point
+        if ($this->scopeConfig->getValue(self::CONFIG_ROUND_FOR_REFUND,ScopeInterface::SCOPE_STORE,$payment->getOrder()->getStoreId())) {
+            $amount = (int)$amount;
         }
         
         try {
@@ -369,7 +377,7 @@ class Payment extends \Magento\Payment\Model\Method\Cc
         $charge_request = array(
             'method' => 'card',
             'currency' => strtolower($order->getBaseCurrencyCode()),
-            'amount' => $amount,
+            'amount' => round($amount),
             'description' => sprintf('#%s, %s', $order->getIncrementId(), $order->getCustomerEmail()),                
             'order_id' => $order->getIncrementId(),
             'source_id' => $token,
@@ -514,7 +522,12 @@ class Payment extends \Magento\Payment\Model\Method\Cc
         return $code;
     }
     
-    private function makeOpenpayCharge($customer_data, $charge_request, $token, $device_session_id, $save_cc, $openpay_cc) {        
+    private function makeOpenpayCharge($customer_data, $charge_request, $token, $device_session_id, $save_cc, $openpay_cc) {
+		if ($this->environmentConfig->isNonProduction() && isset($charge_request['order_id'])) {
+            $environmentNamePrefix = $this->environmentConfig->getEnvironmentName(true);
+            $charge_request['order_id'] = $environmentNamePrefix.''.$charge_request['order_id'];
+        }
+		
         $openpay = $this->getOpenpayInstance();
 
         if (!$this->customerSession->isLoggedIn()) {

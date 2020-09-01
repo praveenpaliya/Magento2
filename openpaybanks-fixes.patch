@@ -1,7 +1,7 @@
-diff --git a/magento2-banks/Controller/Index/Webhook.php b/magento2-banks/Controller/Index/Webhook.php
+diff --git a/Controller/Index/Webhook.php b/Controller/Index/Webhook.php
 index 300315b..104d692 100644
---- a/magento2-banks/Controller/Index/Webhook.php
-+++ b/magento2-banks/Controller/Index/Webhook.php
+--- a/Controller/Index/Webhook.php
++++ b/Controller/Index/Webhook.php
 @@ -83,10 +83,10 @@ class Webhook extends \Magento\Framework\App\Action\Action implements CsrfAwareA
                      $invoice->register();
                      $invoice->save();
@@ -15,10 +15,10 @@ index 300315b..104d692 100644
                      $order->save();
                  }  
              }       
-diff --git a/magento2-banks/Controller/Pse/Confirm.php b/magento2-banks/Controller/Pse/Confirm.php
+diff --git a/Controller/Pse/Confirm.php b/Controller/Pse/Confirm.php
 index a0517dd..f9c96ff 100644
---- a/magento2-banks/Controller/Pse/Confirm.php
-+++ b/magento2-banks/Controller/Pse/Confirm.php
+--- a/Controller/Pse/Confirm.php
++++ b/Controller/Pse/Confirm.php
 @@ -89,47 +89,49 @@ class Confirm extends \Magento\Framework\App\Action\Action
              }
              
@@ -105,10 +105,10 @@ index a0517dd..f9c96ff 100644
              
              $this->logger->debug('#PSE', array('redirect' => 'checkout/onepage/success'));
              return $this->resultRedirectFactory->create()->setPath('checkout/onepage/success');
-diff --git a/magento2-banks/Model/Payment.php b/magento2-banks/Model/Payment.php
+diff --git a/Model/Payment.php b/Model/Payment.php
 index 4ab4251..96a37d6 100644
---- a/magento2-banks/Model/Payment.php
-+++ b/magento2-banks/Model/Payment.php
+--- a/Model/Payment.php
++++ b/Model/Payment.php
 @@ -12,6 +12,7 @@ namespace Openpay\Banks\Model;
  use Magento\Store\Model\ScopeInterface;
  use Magento\Customer\Model\Customer;

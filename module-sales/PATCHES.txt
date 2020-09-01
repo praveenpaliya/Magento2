@@ -5,3 +5,11 @@ Added the GLS Parcel Shop Id under the shipping address of order information in 
 Source: patches/composer/issue-84949.patch
 
 
+Non-GBP reports showing zero amounts in Magento OOTB reports
+Source: patches/composer/issue-216473-module-sales.patch
+
+
+Bundle product invoicing issue
+Source: patches/composer/261725-Bundle-product-invoice.patch
+
+
