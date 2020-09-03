@@ -1,0 +1,16 @@
+diff --git a/module-sales/Block/Adminhtml/Order/Create/Form/Account.php b/module-sales/Block/Adminhtml/Order/Create/Form/Account.php
+index 03915c0..d779099 100644
+--- a/module-sales/Block/Adminhtml/Order/Create/Form/Account.php
++++ b/module-sales/Block/Adminhtml/Order/Create/Form/Account.php
+@@ -113,9 +113,9 @@ class Account extends AbstractForm
+ 
+         // add system required attributes
+         foreach ($customerForm->getSystemAttributes() as $attribute) {
+-            if ($attribute->isRequired()) {
++            //if ($attribute->isRequired()) {
+                 $attributes[$attribute->getAttributeCode()] = $attribute;
+-            }
++            //}
+         }
+ 
+         if ($this->getQuote()->getCustomerIsGuest()) {

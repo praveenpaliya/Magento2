@@ -113,9 +113,9 @@ class Account extends AbstractForm
 
         // add system required attributes
         foreach ($customerForm->getSystemAttributes() as $attribute) {
-            if ($attribute->isRequired()) {
+            //if ($attribute->isRequired()) {
                 $attributes[$attribute->getAttributeCode()] = $attribute;
-            }
+            //}
         }
 
         if ($this->getQuote()->getCustomerIsGuest()) {
