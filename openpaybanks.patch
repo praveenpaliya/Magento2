@@ -1,0 +1,170 @@
+diff --git a/Banks/Controller/Index/Webhook.php b/Banks/Controller/Index/Webhook.php
+index 300315b..104d692 100644
+--- a/Banks/Controller/Index/Webhook.php
++++ b/Banks/Controller/Index/Webhook.php
+@@ -83,10 +83,10 @@ class Webhook extends \Magento\Framework\App\Action\Action implements CsrfAwareA
+                     $invoice->register();
+                     $invoice->save();
+                     
+-                }else if($json->type == 'transaction.expired' && $charge->status == 'cancelled'){
++                } else if(($json->type == 'charge.failed' || $json->type == 'transaction.expired') && $charge->status == 'cancelled'){
+                     $status = \Magento\Sales\Model\Order::STATE_CANCELED;
+                     $order->setState($status)->setStatus($status);
+-                    $order->addStatusHistoryComment("Pago vencido")->setIsCustomerNotified(true);            
++                    $order->addStatusHistoryComment("Pago Cancelado")->setIsCustomerNotified(true);            
+                     $order->save();
+                 }  
+             }       
+diff --git a/Banks/Controller/Pse/Confirm.php b/Banks/Controller/Pse/Confirm.php
+index a0517dd..f9c96ff 100644
+--- a/Banks/Controller/Pse/Confirm.php
++++ b/Banks/Controller/Pse/Confirm.php
+@@ -89,47 +89,49 @@ class Confirm extends \Magento\Framework\App\Action\Action
+             }
+             
+             $this->logger->debug('#PSE', array('id' => $this->request->getParam('id'), 'status' => $charge->status));
+-            if ($order && $charge->status != 'completed') {
+-                $order->cancel();
+-                $order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_CANCELED, __('Autenticación de 3D Secure fallida.'));
+-                $order->save();
+-                $this->logger->debug('#PSE', array('msg' => 'Pago vía PSE fallido'));
+-                                
+-                return $this->resultPageFactory->create();        
+-            }
+-            
+-            $status = \Magento\Sales\Model\Order::STATE_PROCESSING;            
+-            $order->setExtOrderId($this->request->getParam('id')); // Registra el ID de la transacción de Openpay
+-            $order->setState($status)->setStatus($status);
+-            $order->setTotalPaid($charge->amount);  
+-            $order->addStatusHistoryComment("Pago recibido exitosamente")->setIsCustomerNotified(true);            
+-            $order->save();        
+-            $requiresInvoice = true;
+-            /** @var InvoiceCollection $invoiceCollection */
+-            $invoiceCollection = $order->getInvoiceCollection();
+-            if ( $invoiceCollection->count() > 0 ) {
+-                /** @var Invoice $invoice */
+-                foreach ($invoiceCollection as $invoice ) {
+-                    if ( $invoice->getState() == Invoice::STATE_OPEN) {
+-                        $invoice->setState(Invoice::STATE_PAID);
++            if($order){
++                if($charge->status == 'completed'){
++                    $status = \Magento\Sales\Model\Order::STATE_PROCESSING;            
++                    $order->setExtOrderId($this->request->getParam('id')); // Registra el ID de la transacción de Openpay
++                    $order->setState($status)->setStatus($status);
++                    $order->setTotalPaid($charge->amount);  
++                    $order->addStatusHistoryComment("Pago recibido exitosamente")->setIsCustomerNotified(true);            
++                    $order->save();        
++                    $requiresInvoice = true;
++                    /** @var InvoiceCollection $invoiceCollection */
++                    $invoiceCollection = $order->getInvoiceCollection();
++                    if ( $invoiceCollection->count() > 0 ) {
++                        /** @var Invoice $invoice */
++                        foreach ($invoiceCollection as $invoice ) {
++                            if ( $invoice->getState() == Invoice::STATE_OPEN) {
++                                $invoice->setState(Invoice::STATE_PAID);
++                                $invoice->setTransactionId($charge->id);
++                                $invoice->pay()->save();
++                                $requiresInvoice = false;
++                                break;
++                            }
++                        }
++                    }
++                    if ( $requiresInvoice ) {
++                        $invoice = $this->_invoiceService->prepareInvoice($order);
+                         $invoice->setTransactionId($charge->id);
++                        //$invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
++                        //$invoice->register();
+                         $invoice->pay()->save();
+-                        $requiresInvoice = false;
+-                        break;
+                     }
++                    $payment = $order->getPayment();                                
++                    $payment->setAmountPaid($charge->amount);
++                    $payment->setIsTransactionPending(false);
++                    $payment->save();
++                } else if ($charge->status == 'cancelled' || $charge->status == 'failed') {
++                    $order->cancel();
++                    $order->addStatusToHistory(\Magento\Sales\Model\Order::STATE_CANCELED, __('Pago vía PSE fallido'));
++                    $order->save();
++                    $this->logger->debug('#PSE', array('msg' => 'Pago vía PSE fallido'));
++                                    
++                    return $this->resultPageFactory->create();        
+                 }
+             }
+-            if ( $requiresInvoice ) {
+-                $invoice = $this->_invoiceService->prepareInvoice($order);
+-                $invoice->setTransactionId($charge->id);
+-//            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
+-//            $invoice->register();
+-                $invoice->pay()->save();
+-            }
+-            $payment = $order->getPayment();                                
+-            $payment->setAmountPaid($charge->amount);
+-            $payment->setIsTransactionPending(false);
+-            $payment->save();
+             
+             $this->logger->debug('#PSE', array('redirect' => 'checkout/onepage/success'));
+             return $this->resultRedirectFactory->create()->setPath('checkout/onepage/success');
+diff --git a/Banks/Model/Payment.php b/Banks/Model/Payment.php
+index 4ab4251..96a37d6 100644
+--- a/Banks/Model/Payment.php
++++ b/Banks/Model/Payment.php
+@@ -12,6 +12,7 @@ namespace Openpay\Banks\Model;
+ use Magento\Store\Model\ScopeInterface;
+ use Magento\Customer\Model\Customer;
+ use Magento\Customer\Model\Session as CustomerSession;
++use BAT\Environment\Model\Config as EnvironmentConfig;
+ 
+ /**
+  * Class Payment
+@@ -52,6 +53,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
+     protected $_directoryList;
+     protected $_file;
+     protected $iva;
++	private $environmentConfig;
+ 
+     /**
+      * 
+@@ -74,6 +76,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
+      * @param array $data
+      */
+     public function __construct(
++		EnvironmentConfig $environmentConfig,
+         \Magento\Framework\Model\Context $context, 
+         \Magento\Framework\Registry $registry,
+         \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
+@@ -105,7 +108,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
+             null,
+             $data
+         );
+-        
++        $this->environmentConfig = $environmentConfig;
+         $this->customerModel = $customerModel;
+         $this->customerSession = $customerSession;
+         $this->openpayCustomerFactory = $openpayCustomerFactory;
+@@ -251,7 +254,12 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
+         return $this;
+     }
+     
+-    private function makeOpenpayCharge($customer_data, $charge_request) {        
++    private function makeOpenpayCharge($customer_data, $charge_request) {
++		if ($this->environmentConfig->isNonProduction() && isset($charge_request['order_id'])) {
++            $environmentNamePrefix = $this->environmentConfig->getEnvironmentName(true);
++            $charge_request['order_id'] = $environmentNamePrefix.''.$charge_request['order_id'];
++        }
++		
+         $openpay = $this->getOpenpayInstance();        
+ 
+         // Cargo para usuarios "invitados"
+@@ -515,8 +523,9 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
+      * @return mixed
+      */
+     public function createWebhook() {
+-        $protocol = $this->hostSecure() === true ? 'https://' : 'http://';
+-        $uri = $_SERVER['HTTP_HOST']."/openpay/index/webhook";
++        //$protocol = $this->hostSecure() === true ? 'https://' : 'http://';
++        $base_url = $this->_storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
++        $uri = $base_url."openpay/index/webhook";
+         $webhook_data = array(
+             'url' => $protocol.$uri,
+             'event_types' => array(

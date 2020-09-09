@@ -12,6 +12,7 @@ namespace Openpay\Banks\Model;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\Session as CustomerSession;
+use BAT\Environment\Model\Config as EnvironmentConfig;
 
 /**
  * Class Payment
@@ -52,6 +53,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
     protected $_directoryList;
     protected $_file;
     protected $iva;
+	private $environmentConfig;
 
     /**
      * 
@@ -74,6 +76,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
      * @param array $data
      */
     public function __construct(
+		EnvironmentConfig $environmentConfig,
         \Magento\Framework\Model\Context $context, 
         \Magento\Framework\Registry $registry,
         \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
@@ -105,7 +108,7 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
             null,
             $data
         );
-        
+        $this->environmentConfig = $environmentConfig;
         $this->customerModel = $customerModel;
         $this->customerSession = $customerSession;
         $this->openpayCustomerFactory = $openpayCustomerFactory;
@@ -251,7 +254,12 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
         return $this;
     }
     
-    private function makeOpenpayCharge($customer_data, $charge_request) {        
+    private function makeOpenpayCharge($customer_data, $charge_request) {
+		if ($this->environmentConfig->isNonProduction() && isset($charge_request['order_id'])) {
+            $environmentNamePrefix = $this->environmentConfig->getEnvironmentName(true);
+            $charge_request['order_id'] = $environmentNamePrefix.''.$charge_request['order_id'];
+        }
+		
         $openpay = $this->getOpenpayInstance();        
 
         // Cargo para usuarios "invitados"
@@ -515,8 +523,9 @@ class Payment extends \Magento\Payment\Model\Method\AbstractMethod
      * @return mixed
      */
     public function createWebhook() {
-        $protocol = $this->hostSecure() === true ? 'https://' : 'http://';
-        $uri = $_SERVER['HTTP_HOST']."/openpay/index/webhook";
+        //$protocol = $this->hostSecure() === true ? 'https://' : 'http://';
+        $base_url = $this->_storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
+        $uri = $base_url."openpay/index/webhook";
         $webhook_data = array(
             'url' => $protocol.$uri,
             'event_types' => array(
