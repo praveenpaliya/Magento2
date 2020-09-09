@@ -13,6 +13,7 @@ use Magento\Framework\View\Result\PageFactory;
 use Openpay\Banks\Model\Payment as OpenpayPayment;
 use Magento\Sales\Model\ResourceModel\Order\Invoice\Collection as InvoiceCollection;
 use Magento\Sales\Model\Order\Invoice;
+use BAT\Setup\Setup\Patch\Data\AddOrderStatusAwaitingShipment;
 
 
 class Confirm extends \Magento\Framework\App\Action\Action
@@ -107,6 +108,9 @@ class Confirm extends \Magento\Framework\App\Action\Action
                                 $invoice->setState(Invoice::STATE_PAID);
                                 $invoice->setTransactionId($charge->id);
                                 $invoice->pay()->save();
+								$status = AddOrderStatusAwaitingShipment::STATUS_AWAITING_SHIPMENT;
+								$order->setState($status)->setStatus($status);
+								$order->save();  
                                 $requiresInvoice = false;
                                 break;
                             }
@@ -118,6 +122,9 @@ class Confirm extends \Magento\Framework\App\Action\Action
                         //$invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
                         //$invoice->register();
                         $invoice->pay()->save();
+						$status = AddOrderStatusAwaitingShipment::STATUS_AWAITING_SHIPMENT;
+						$order->setState($status)->setStatus($status);
+						$order->save();
                     }
                     $payment = $order->getPayment();                                
                     $payment->setAmountPaid($charge->amount);
